@@ -11,16 +11,16 @@ const NavItem: React.FC<{
   onClick: (screen: Screen) => void;
 }> = ({ icon, label, screen, activeScreen, onClick }) => {
   const isActive = screen === activeScreen;
-  const color = isActive ? 'text-[var(--primary-color)]' : 'text-slate-500';
-  const background = isActive ? 'bg-[var(--primary-color)]/10' : '';
+  const color = isActive ? 'text-[#1193d4]' : 'text-gray-300';
+  const background = isActive ? 'bg-[#1193d4]/20 rounded-lg' : '';
 
   return (
     <button
       onClick={() => onClick(screen)}
-      className={`flex flex-col items-center gap-1 p-2 rounded-lg flex-1 ${color} ${background} cursor-pointer`}
+      className={`flex flex-col items-center gap-1 p-2 rounded-lg flex-1 ${color} ${background} cursor-pointer transition-all duration-200 hover:bg-gray-700`}
     >
-      <Icon name={icon} />
-      <span className={`text-xs ${isActive ? 'font-bold' : ''}`}>{label}</span>
+      <Icon name={icon} className={isActive ? 'text-lg' : 'text-base'} />
+      <span className={`text-xs ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
     </button>
   );
 };
@@ -47,8 +47,8 @@ export const BottomNav = () => {
   if (!isNavVisible) return null;
 
   return (
-    <footer className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 shadow-t-sm">
-      <nav className="flex justify-around p-2">
+    <footer className="sticky bottom-0 z-50 bg-[#1C1C1E] border-t border-gray-700 shadow-lg">
+      <nav className="flex justify-around p-3">
         {navItems.map(item => (
           <NavItem 
             key={item.label}

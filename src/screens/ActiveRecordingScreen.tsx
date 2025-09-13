@@ -15,9 +15,10 @@ export const ActiveRecordingScreen: React.FC = () => {
     addMessageToSession,
     setError,
     setProcessingState,
+    settings,
   } = useAppContext();
 
-  const audioRecorder = useAudioRecorder(); // Moved inside the component for per-recording instance
+  const audioRecorder = useAudioRecorder();
 
   const [timer, setTimer] = useState(0);
 
@@ -75,8 +76,8 @@ export const ActiveRecordingScreen: React.FC = () => {
         currentProcessingState = { ...currentProcessingState, step: 'Translate', translatedText, confidence: { ...currentProcessingState.confidence, translate: randomTranslateConfidence } };
         setProcessingState(currentProcessingState);
 
-        const voice = isDoctor ? 'sade' : 'john';
-        const speechBlob = await generateSpeech(translatedText, targetLang, voice);
+        const targetVoice = isDoctor ? settings.patientVoice : settings.providerVoice;
+        const speechBlob = await generateSpeech(translatedText, targetLang, targetVoice);
         const audioUrl = URL.createObjectURL(speechBlob);
         currentProcessingState = { ...currentProcessingState, step: 'Speak' };
         setProcessingState(currentProcessingState);
@@ -111,7 +112,7 @@ export const ActiveRecordingScreen: React.FC = () => {
     if (!audioRecorder.isRecording && audioRecorder.audioBlob) {
       processAudio();
     }
-  }, [audioRecorder.isRecording, audioRecorder.audioBlob, activeRecorder, addMessageToSession, doctorLanguage, patientLanguage, setError, setProcessingState, setScreen, setActiveRecorder]);
+  }, [audioRecorder.isRecording, audioRecorder.audioBlob, activeRecorder, addMessageToSession, doctorLanguage, patientLanguage, setError, setProcessingState, setScreen, setActiveRecorder, settings]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');

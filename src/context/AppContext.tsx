@@ -7,8 +7,8 @@ const initialSettings: Settings = {
   speakerVolume: 50,
   patientLanguage: 'yo',
   providerLanguage: 'en',
-  patientVoice: 'sade',
-  providerVoice: 'john',
+  patientVoice: 'sade',  // Default for Yoruba
+  providerVoice: 'john',  // Default for English
   highQualityRecording: true,
   autoSave: false,
 };
@@ -21,8 +21,8 @@ interface AppContextType {
   patientLanguage: Language;
   setPatientLanguage: (lang: Language) => void;
   sessions: Session[];
+  setSessions: (sessions: Session[]) => void;
   addSession: (session: Session) => void;
-  setSessions: (sessions: Session[]) => void; // Added this method
   currentSession: Session | null;
   setCurrentSession: (session: Session | null) => void;
   startNewSession: () => void;
@@ -98,8 +98,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       patientLanguage,
       setPatientLanguage,
       sessions,
+      setSessions,
       addSession,
-      setSessions, // Added to context value
       currentSession,
       setCurrentSession,
       startNewSession,

@@ -19,10 +19,19 @@ const SessionCard: React.FC<{ session: Session; onContinue?: (session: Session) 
     window.URL.revokeObjectURL(url);
   };
 
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this session?')) {
-      setSessions(sessions.filter(s => s.id !== session.id));
-    }
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDelete = () => {
+    setSessions(sessions.filter(s => s.id !== session.id));
+    setShowConfirmDelete(false);
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmDelete(false);
   };
 
   const handleContinue = () => {
@@ -54,6 +63,18 @@ const SessionCard: React.FC<{ session: Session; onContinue?: (session: Session) 
           ))}
         </div>
       </details>
+      {showConfirmDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Deletion</h2>
+            <p className="mb-6 text-gray-600">Are you sure you want to delete this session? This action cannot be undone.</p>
+            <div className="flex justify-end gap-4">
+              <button onClick={cancelDelete} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Cancel</button>
+              <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
