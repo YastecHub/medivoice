@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Screen, Speaker, LANGUAGES, Message } from '../../types';
+import { Screen, Speaker, LANGUAGES, Message, Language } from '../../types';
 import { Icon } from '../components/Icon';
+import { BottomNav } from '../components/BottomNav';
 
 export const SpeakerPanel: React.FC<{ speaker: Speaker }> = ({ speaker }) => {
   const {
@@ -105,3 +106,5 @@ export const SpeakerPanel: React.FC<{ speaker: Speaker }> = ({ speaker }) => {
     </div>
   );
 };
+
+export default SpeakerPanel;

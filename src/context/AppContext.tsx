@@ -42,8 +42,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [screen, setScreen] = useState<Screen>(Screen.Welcome);
-  const [doctorLanguage, setDoctorLanguage] = useState<Language>('en');
-  const [patientLanguage, setPatientLanguage] = useState<Language>('yo');
+  const [doctorLanguage, setDoctorLanguage] = useState<Language>(initialSettings.providerLanguage);
+  const [patientLanguage, setPatientLanguage] = useState<Language>(initialSettings.patientLanguage);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [activeRecorder, setActiveRecorder] = useState<Speaker | null>(null);

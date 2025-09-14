@@ -22,6 +22,15 @@ export const ConversationScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentSession]);
 
+  // Set initial voices based on selected languages when session starts
+  useEffect(() => {
+    if (currentSession && !currentSession.languages) {
+      const initialDoctorVoice = getAvailableVoices(doctorLanguage)[0] || 'john';
+      const initialPatientVoice = getAvailableVoices(patientLanguage)[0] || 'sade';
+      updateSettings({ providerVoice: initialDoctorVoice, patientVoice: initialPatientVoice });
+    }
+  }, [doctorLanguage, patientLanguage, currentSession, updateSettings]);
+
   const endSession = () => {
     if (currentSession) {
       const duration = sessionTime; // Use actual session time
@@ -72,7 +81,6 @@ export const ConversationScreen: React.FC = () => {
     yo: ['sade', 'segun', 'femi', 'funmi'],
     ha: ['amina', 'aliyu', 'hasan', 'zainab'],
     ig: ['kani', 'ngozi', 'amara', 'obinna', 'ebuka'],
-    // am: ['hana', 'selam', 'tena', 'tesfaye'],
   };
 
   const getAvailableVoices = (lang: Language) => voicesByLanguage[lang] || [];
@@ -100,10 +108,6 @@ export const ConversationScreen: React.FC = () => {
       amara: 'Amara (Female, Igbo)',
       obinna: 'Obinna (Male, Igbo)',
       ebuka: 'Ebuka (Male, Igbo)',
-      hana: 'Hana (Female, Amharic)',
-      selam: 'Selam (Female, Amharic)',
-      tena: 'Tena (Female, Amharic)',
-      tesfaye: 'Tesfaye (Male, Amharic)',
     };
     return voiceMap[voice as keyof typeof voiceMap] || voice;
   };

@@ -1,12 +1,49 @@
-// WelcomeScreen.tsx
-import React from 'react';
+import React, { useState } from 'react';
+import ReactModal from 'react-modal';
 import { useAppContext } from '../context/AppContext';
 import { Language, LANGUAGES, Screen } from '../../types';
 import { Icon } from '../components/Icon';
 import { LanguageSelector } from './LanguageSelector';
 
+// Set app element for accessibility (add this in your main app file if not already)
+ReactModal.setAppElement('#root');
+
 export const WelcomeScreen: React.FC = () => {
   const { doctorLanguage, setDoctorLanguage, patientLanguage, setPatientLanguage, startNewSession, setScreen } = useAppContext();
+
+  const [showLanguageError, setShowLanguageError] = useState(false);
+
+  const handleDoctorLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value as Language;
+    if (newLang === patientLanguage) {
+      setShowLanguageError(true);
+    } else {
+      setDoctorLanguage(newLang);
+      setShowLanguageError(false);
+    }
+  };
+
+  const handlePatientLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value as Language;
+    if (newLang === doctorLanguage) {
+      setShowLanguageError(true);
+    } else {
+      setPatientLanguage(newLang);
+      setShowLanguageError(false);
+    }
+  };
+
+  const handleStartSession = () => {
+    if (doctorLanguage !== patientLanguage) {
+      startNewSession();
+    } else {
+      setShowLanguageError(true);
+    }
+  };
+
+  const closeLanguageError = () => {
+    setShowLanguageError(false);
+  };
 
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between bg-[var(--background-color)]" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
@@ -30,22 +67,48 @@ export const WelcomeScreen: React.FC = () => {
         <div className="w-full max-w-4xl mt-10 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)] text-left">Doctor</h2>
-            <LanguageSelector value={doctorLanguage} onChange={(e) => setDoctorLanguage(e.target.value as Language)} />
+            <LanguageSelector value={doctorLanguage} onChange={handleDoctorLanguageChange} />
           </div>
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)] text-left">Patient</h2>
-            <LanguageSelector value={patientLanguage} onChange={(e) => setPatientLanguage(e.target.value as Language)} />
+            <LanguageSelector value={patientLanguage} onChange={handlePatientLanguageChange} />
           </div>
         </div>
       </main>
       <footer className="p-4 sm:p-6 w-full max-w-4xl mx-auto">
         <button
-          onClick={startNewSession}
+          onClick={handleStartSession}
           className="w-full bg-[var(--primary-color)] hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] cursor-pointer"
+          disabled={doctorLanguage === patientLanguage}
         >
           Start Session
         </button>
       </footer>
+
+      <ReactModal
+        isOpen={showLanguageError}
+        onRequestClose={closeLanguageError}
+        contentLabel="Language Selection Error"
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 mx-auto"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+        ariaHideApp={false} // Set to false if not using appElement
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-full bg-red-100">
+            <Icon name="error" className="text-xl text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Language Selection Error</h2>
+        </div>
+        <p className="text-gray-700 mb-6">Doctor and Patient languages must be different. Please select different languages to continue.</p>
+        <div className="flex justify-end">
+          <button
+            onClick={closeLanguageError}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            OK
+          </button>
+        </div>
+      </ReactModal>
     </div>
   );
 };
