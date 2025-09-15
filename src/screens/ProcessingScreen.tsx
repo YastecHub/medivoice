@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Screen } from '../../types';
 import { Icon } from '../components/Icon';
@@ -31,7 +31,18 @@ const Step: React.FC<{
 
 export const ProcessingScreen: React.FC = () => {
   const { processingState, setScreen } = useAppContext();
-  
+
+  useEffect(() => {
+    if (processingState && processingState.step === 'Speak') {
+      // Automatically transition back after a short delay to ensure playback completes
+      const timeoutId = setTimeout(() => {
+        setScreen(Screen.Conversation);
+      }, 3000); // 3 seconds to allow speech to play
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [processingState, setScreen]);
+
   if (!processingState) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#0d1317]">

@@ -10,7 +10,6 @@ const mockTranscriptions: Record<Language, string> = {
   yo: "Mo ni irora nla ni ikun isale mi.",
   ha: "Ina jin zafi mai tsanani a cikin cikina na kasa.",
   ig: "Ana m mmetụta nnukwu mgbu na afo m di ala.",
-  // am: "በታችኛው ሆዴ ላይ ከባድ ህመም ይሰማኛል.",
 };
 
 const mockTranslations: Record<string, string> = {
@@ -22,19 +21,21 @@ const mockTranslations: Record<string, string> = {
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-const mockTranscribeAudio = async (audioBlob: Blob, language: Language) => {
+export const mockTranscribeAudio = async (audioBlob: Blob, language: Language) => {
   await delay(1500);
   return { text: mockTranscriptions[language] || "Mock transcription" };
 };
 
-const mockTranslateText = async (text: string, source: Language, target: Language) => {
+export const mockTranslateText = async (text: string, source: Language, target: Language) => {
   await delay(1500);
   return { text: mockTranslations[text] || "Mock translation" };
 };
 
-const mockGenerateSpeech = async (text: string, language: Language, voice: string): Promise<Blob> => {
+export const mockGenerateSpeech = async (text: string, language: Language, voice: string): Promise<Blob> => {
   await delay(1500);
-  return new Blob([], { type: 'audio/wav' }); // Mock silent audio
+  // Return a valid audio Blob (e.g., a short silent WAV)
+  const arrayBuffer = new ArrayBuffer(44); // Minimal WAV header
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
 };
 
 // Real Spitch API functions

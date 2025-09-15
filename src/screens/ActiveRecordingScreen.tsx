@@ -49,7 +49,7 @@ export const ActiveRecordingScreen: React.FC = () => {
   useEffect(() => {
     const processAudio = async () => {
       if (!audioRecorder.audioBlob || activeRecorder === null) return;
-      
+
       const isDoctor = activeRecorder === 'doctor';
       const sourceLang = isDoctor ? doctorLanguage : patientLanguage;
       const targetLang = isDoctor ? patientLanguage : doctorLanguage;
@@ -96,7 +96,15 @@ export const ActiveRecordingScreen: React.FC = () => {
           audioUrl,
         });
 
+        // Fallback timer to ensure transition if audio fails
+        const timeoutId = setTimeout(() => {
+          setProcessingState(null);
+          setActiveRecorder(null);
+          setScreen(Screen.Conversation);
+        }, 5000); // 5 seconds timeout
+
         audio.onended = () => {
+          clearTimeout(timeoutId); // Clear timeout if audio ends naturally
           setProcessingState(null);
           setActiveRecorder(null);
           setScreen(Screen.Conversation);
@@ -106,6 +114,7 @@ export const ActiveRecordingScreen: React.FC = () => {
         setError(`Processing failed: ${err.message}`);
         setProcessingState(null);
         setActiveRecorder(null);
+        setScreen(Screen.Conversation);
       }
     };
 
