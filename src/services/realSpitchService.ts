@@ -2,9 +2,7 @@ import { Language } from '../../types';
 
 const API_BASE_URL = 'https://api.spi-tch.com/v1';
 
-// Replace "YOUR_SPITCH_API_KEY_HERE" with your actual API key.
-// It is recommended to use environment variables for production.
-const API_KEY = "YOUR_SPITCH_API_KEY_HERE";
+const API_KEY = process.env.SPITCH_API_KEY;
 
 if (!API_KEY || API_KEY === "YOUR_SPITCH_API_KEY_HERE") {
     console.warn("Spitch API key not set. Real API calls will fail. Please set it in services/realSpitchService.ts");

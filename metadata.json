@@ -1,5 +1,5 @@
 {
-  "name": "MediVoice",
+  "name": "MediVoice - Healthcare Language Bridge",
   "description": "A real-time healthcare communication app that bridges language barriers between doctors and patients using speech transcription and translation, with a focus on African languages.",
   "requestFramePermissions": [
     "microphone"

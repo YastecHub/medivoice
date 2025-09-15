@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { BottomNav } from '../components/BottomNav';
 
 const SessionCard: React.FC<{ session: Session; onContinue?: (session: Session) => void }> = ({ session, onContinue }) => {
-  const { sessions, setSessions, setCurrentSession, setScreen } = useAppContext();
+  const { sessions, setSessions, setCurrentSession } = useAppContext();
   const getLangName = (code: string) => LANGUAGES.find(l => l.code === code)?.name || code;
 
   const handleDownload = () => {
@@ -36,7 +36,6 @@ const SessionCard: React.FC<{ session: Session; onContinue?: (session: Session) 
 
   const handleContinue = () => {
     if (onContinue) onContinue(session);
-    setScreen(Screen.Conversation);
   };
 
   return (
@@ -84,6 +83,7 @@ export const HistoryScreen: React.FC = () => {
 
   const handleContinueSession = (session: Session) => {
     setCurrentSession(session);
+    setScreen(Screen.History);
   };
 
   return (
