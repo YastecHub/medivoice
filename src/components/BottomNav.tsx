@@ -36,8 +36,10 @@ export const BottomNav = () => {
 
   const isNavVisible = [Screen.Conversation, Screen.History, Screen.Settings].includes(screen);
 
-  const handleNavClick = (screen: Screen) => {
-    if (screen === Screen.Conversation && !currentSession) {
+const handleNavClick = (screen: Screen) => {
+    if ((screen === Screen.Conversation || screen === Screen.History) && !currentSession && (screen === Screen.Conversation || screen === Screen.History)) {
+      setScreen(Screen.Welcome);
+    } else if (screen === Screen.Conversation && !currentSession) {
       setScreen(Screen.Welcome);
     } else {
       setScreen(screen);
