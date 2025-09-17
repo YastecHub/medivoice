@@ -1,26 +1,24 @@
+// ActiveRecordingScreen.tsx - Optimized for immediate transition
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Screen, ProcessingState } from '../../types';
+import { Screen } from '../../types';
 import { Icon } from '../components/Icon';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
-import { transcribeAudio, translateText, generateSpeech } from '../services/spitchService';
 
 export const ActiveRecordingScreen: React.FC = () => {
   const {
     activeRecorder,
     setActiveRecorder,
     setScreen,
-    doctorLanguage,
-    patientLanguage,
-    addMessageToSession,
     setError,
-    setProcessingState,
-    settings,
+    audioRecorder: contextAudioRecorder
   } = useAppContext();
 
-  const audioRecorder = useAudioRecorder();
+  const localAudioRecorder = useAudioRecorder();
+  const audioRecorder = contextAudioRecorder || localAudioRecorder;
 
   const [timer, setTimer] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     audioRecorder.startRecording();
@@ -34,94 +32,31 @@ export const ActiveRecordingScreen: React.FC = () => {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (audioRecorder.isRecording) {
+    if (audioRecorder.isRecording && !isTransitioning) {
       interval = setInterval(() => {
         setTimer(prev => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [audioRecorder.isRecording]);
+  }, [audioRecorder.isRecording, isTransitioning]);
 
   const handleStop = useCallback(async () => {
-    audioRecorder.stopRecording();
-  }, [audioRecorder]);
-
-  useEffect(() => {
-    const processAudio = async () => {
-      if (!audioRecorder.audioBlob || activeRecorder === null) return;
-
-      const isDoctor = activeRecorder === 'doctor';
-      const sourceLang = isDoctor ? doctorLanguage : patientLanguage;
-      const targetLang = isDoctor ? patientLanguage : doctorLanguage;
-
-      try {
-        let currentProcessingState: ProcessingState = {
-          step: 'Listen',
-          originalText: '',
-          translatedText: '',
-          confidence: { listen: 98, transcribe: 0, translate: 0 },
-        };
-        setProcessingState(currentProcessingState);
-        setScreen(Screen.Processing);
-
-        const transcriptionRes = await transcribeAudio(audioRecorder.audioBlob, sourceLang);
-        const originalText = transcriptionRes.text;
-        const randomTranscribeConfidence = Math.floor(Math.random() * (99 - 90 + 1)) + 90;
-        currentProcessingState = { ...currentProcessingState, step: 'Transcribe', originalText, confidence: { ...currentProcessingState.confidence, transcribe: randomTranscribeConfidence } };
-        setProcessingState(currentProcessingState);
-
-        const translationRes = await translateText(originalText, sourceLang, targetLang);
-        const translatedText = translationRes.text;
-        const randomTranslateConfidence = Math.floor(Math.random() * (98 - 88 + 1)) + 88;
-        currentProcessingState = { ...currentProcessingState, step: 'Translate', translatedText, confidence: { ...currentProcessingState.confidence, translate: randomTranslateConfidence } };
-        setProcessingState(currentProcessingState);
-
-        const targetVoice = isDoctor ? settings.patientVoice : settings.providerVoice;
-        const speechBlob = await generateSpeech(translatedText, targetLang, targetVoice);
-        const audioUrl = URL.createObjectURL(speechBlob);
-        currentProcessingState = { ...currentProcessingState, step: 'Speak' };
-        setProcessingState(currentProcessingState);
-
-        const audio = new Audio(audioUrl);
-        audio.play();
-
-        const randomConfidence = Math.floor(Math.random() * (98 - 85 + 1)) + 85;
-        addMessageToSession({
-          speaker: activeRecorder,
-          originalText,
-          translatedText,
-          originalLang: sourceLang,
-          translatedLang: targetLang,
-          confidence: randomConfidence,
-          audioUrl,
-        });
-
-        // Fallback timer to ensure transition if audio fails
-        const timeoutId = setTimeout(() => {
-          setProcessingState(null);
-          setActiveRecorder(null);
-          setScreen(Screen.Conversation);
-        }, 5000); // 5 seconds timeout
-
-        audio.onended = () => {
-          clearTimeout(timeoutId); // Clear timeout if audio ends naturally
-          setProcessingState(null);
-          setActiveRecorder(null);
-          setScreen(Screen.Conversation);
-        };
-      } catch (err: any) {
-        console.error('Processing failed:', err);
-        setError(`Processing failed: ${err.message}`);
-        setProcessingState(null);
-        setActiveRecorder(null);
-        setScreen(Screen.Conversation);
-      }
-    };
-
-    if (!audioRecorder.isRecording && audioRecorder.audioBlob) {
-      processAudio();
+    if (isTransitioning) return; // Prevent multiple clicks
+    
+    setIsTransitioning(true);
+    
+    try {
+      // Immediately navigate to processing screen
+      setScreen(Screen.Processing);
+      
+      // Stop recording in the background
+      audioRecorder.stopRecording();
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      setError('Failed to stop recording');
+      setIsTransitioning(false);
     }
-  }, [audioRecorder.isRecording, audioRecorder.audioBlob, activeRecorder, addMessageToSession, doctorLanguage, patientLanguage, setError, setProcessingState, setScreen, setActiveRecorder, settings]);
+  }, [audioRecorder, setScreen, setError, isTransitioning]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -172,8 +107,16 @@ export const ActiveRecordingScreen: React.FC = () => {
         <div className="flex justify-between items-center text-white">
           <p className="text-lg font-mono">{formatTime(timer)}</p>
         </div>
-        <button onClick={handleStop} className="w-full max-w-md mx-auto flex cursor-pointer items-center justify-center overflow-hidden rounded-full h-16 bg-red-600 hover:bg-red-700 text-white text-2xl font-bold leading-normal tracking-wider shadow-lg">
-          <span className="truncate">STOP</span>
+        <button 
+          onClick={handleStop} 
+          disabled={isTransitioning}
+          className={`w-full max-w-md mx-auto flex cursor-pointer items-center justify-center overflow-hidden rounded-full h-16 text-white text-2xl font-bold leading-normal tracking-wider shadow-lg transition-all duration-200 ${
+            isTransitioning 
+              ? 'bg-gray-600 cursor-not-allowed' 
+              : 'bg-red-600 hover:bg-red-700 active:scale-95'
+          }`}
+        >
+          <span className="truncate">{isTransitioning ? 'STOPPING...' : 'STOP'}</span>
         </button>
       </div>
     </div>

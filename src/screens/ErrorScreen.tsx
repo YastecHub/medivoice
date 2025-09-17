@@ -6,13 +6,23 @@ import { Icon } from '../components/Icon';
 export const ErrorScreen: React.FC = () => {
   const { error, setError, setScreen } = useAppContext();
 
+  // Retry should send user back to active recording
   const handleRetry = () => {
     setError(null);
-    setScreen(Screen.Welcome);
+    setScreen(Screen.Recording); // instead of Screen.Welcome
+  };
+
+  // Return to main screen should send user back to conversation
+  const handleReturnToMain = () => {
+    setError(null);
+    setScreen(Screen.Conversation); // instead of Screen.Welcome
   };
 
   return (
-    <div className="flex size-full min-h-screen flex-col justify-center items-center bg-slate-50 p-4" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
+    <div
+      className="flex size-full min-h-screen flex-col justify-center items-center bg-slate-50 p-4"
+      style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}
+    >
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center text-center">
         <Icon name="error" className="text-red-500 text-6xl mb-4" />
         <h2 className="text-2xl font-bold text-[#0d171b] mb-2">Connection Error</h2>
@@ -31,12 +41,20 @@ export const ErrorScreen: React.FC = () => {
           </div>
         </div>
 
-        <button onClick={handleRetry} className="w-full flex items-center justify-center rounded-lg h-12 px-6 bg-[#1193d4] text-white text-base font-bold transition-all duration-300 hover:bg-[#0f82b9] active:scale-95 mb-4 cursor-pointer">
+        {/* Retry goes back to Active Recording */}
+        <button
+          onClick={handleRetry}
+          className="w-full flex items-center justify-center rounded-lg h-12 px-6 bg-[#1193d4] text-white text-base font-bold transition-all duration-300 hover:bg-[#0f82b9] active:scale-95 mb-4 cursor-pointer"
+        >
           Retry
         </button>
         
-        <button onClick={() => setScreen(Screen.Welcome)} className="mt-6 text-[#4c809a] text-sm font-medium hover:text-[#1193d4] transition-colors duration-300 cursor-pointer">
-          Return to Main Screen
+        {/* Return to Conversation */}
+        <button
+          onClick={handleReturnToMain}
+          className="mt-6 text-[#4c809a] text-sm font-medium hover:text-[#1193d4] transition-colors duration-300 cursor-pointer"
+        >
+          Return to Conversation
         </button>
       </div>
     </div>

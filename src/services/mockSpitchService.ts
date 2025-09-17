@@ -2,7 +2,7 @@ import { Language } from '../../types';
 
 const SPITCH_API_KEY = process.env.SPITCH_API_KEY; // Set in .env or environment
 const API_BASE_URL = 'https://api.spi-tch.com/v1';
-const USE_MOCK_API = true; // Toggle to false for real API
+const USE_MOCK_API = false; // Toggle to false for real API
 
 // Mock functions (as before)
 const mockTranscriptions: Record<Language, string> = {
