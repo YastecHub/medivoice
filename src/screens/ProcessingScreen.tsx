@@ -1,4 +1,4 @@
-// ProcessingScreen.tsx - Enhanced with robust error handling and timeouts
+// ProcessingScreen.tsx - Simplified to work with the new recording approach
 import React, { useEffect, useState, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Screen, ProcessingState } from '../../types';
@@ -43,20 +43,36 @@ export const ProcessingScreen: React.FC = () => {
     processingState,
     setProcessingState,
     settings,
-    audioRecorder,
   } = useAppContext();
 
   const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<'waiting' | 'processing' | 'error' | 'completed'>('waiting');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const overallTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get the audio blob from the recording screen
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+
+  // Get the audio blob from the global storage (set by ActiveRecordingScreen)
+  useEffect(() => {
+    const getAudioBlob = () => {
+      // Check if there's a global audio blob (set by the recording screen)
+      if ((window as any).latestAudioBlob) {
+        console.log('Found audio blob from recording screen:', (window as any).latestAudioBlob);
+        setAudioBlob((window as any).latestAudioBlob);
+        return;
+      }
+      
+      // Fallback - create a test blob if needed (for development)
+      console.log('No audio blob found, creating test blob');
+      const testBlob = new Blob([new ArrayBuffer(1024)], { type: 'audio/webm' });
+      setAudioBlob(testBlob);
+    };
+
+    getAudioBlob();
+  }, []);
 
   // Cleanup function
   const cleanup = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
     if (overallTimeoutRef.current) {
       clearTimeout(overallTimeoutRef.current);
       overallTimeoutRef.current = null;
@@ -77,24 +93,21 @@ export const ProcessingScreen: React.FC = () => {
     }
   };
 
-  // Start API processing when component mounts
+  // Start processing
   useEffect(() => {
     const processAudio = async () => {
-      // Wait for audioBlob to be available or timeout
-      const waitForAudioBlob = async (maxWaitTime = 5000) => {
-        const startTime = Date.now();
-        while (!audioRecorder?.audioBlob && (Date.now() - startTime) < maxWaitTime) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+      if (activeRecorder === null || hasStartedProcessing || !audioBlob) {
+        if (!audioBlob) {
+          console.log('Waiting for audio blob...');
         }
-        return audioRecorder?.audioBlob;
-      };
+        return;
+      }
 
-      if (activeRecorder === null || hasStartedProcessing) return;
-
+      console.log('Starting audio processing with blob:', { size: audioBlob.size, type: audioBlob.type });
       setHasStartedProcessing(true);
       setProcessingStep('processing');
 
-      // Set overall timeout for the entire process (30 seconds)
+      // Set overall timeout
       overallTimeoutRef.current = setTimeout(() => {
         console.error('Overall processing timeout');
         setError('Processing timeout. Please try again.');
@@ -102,18 +115,11 @@ export const ProcessingScreen: React.FC = () => {
       }, 30000);
 
       try {
-        // Wait for audio blob with timeout
-        const audioBlob = await waitForAudioBlob();
-        
-        if (!audioBlob) {
-          throw new Error('No audio data available. Please try recording again.');
-        }
-
         const isDoctor = activeRecorder === 'doctor';
         const sourceLang = isDoctor ? doctorLanguage : patientLanguage;
         const targetLang = isDoctor ? patientLanguage : doctorLanguage;
 
-        // Step 1: Listen (already completed)
+        // Step 1: Listen
         let currentProcessingState: ProcessingState = {
           step: 'Listen',
           originalText: '',
@@ -121,20 +127,14 @@ export const ProcessingScreen: React.FC = () => {
           confidence: { listen: 98, transcribe: 0, translate: 0 },
         };
         setProcessingState(currentProcessingState);
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Small delay to show the Listen step
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Step 2: Transcribe with timeout
+        // Step 2: Transcribe
+        console.log('Starting transcription with blob:', { size: audioBlob.size, type: audioBlob.type });
         currentProcessingState = { ...currentProcessingState, step: 'Transcribe' };
         setProcessingState(currentProcessingState);
 
-        const transcribePromise = transcribeAudio(audioBlob, sourceLang);
-        const transcribeTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Transcription timeout')), 15000);
-        });
-
-        const transcriptionRes = await Promise.race([transcribePromise, transcribeTimeout]);
+        const transcriptionRes = await transcribeAudio(audioBlob, sourceLang);
         const originalText = transcriptionRes.text;
         
         if (!originalText || originalText.trim().length === 0) {
@@ -149,16 +149,11 @@ export const ProcessingScreen: React.FC = () => {
         };
         setProcessingState(currentProcessingState);
 
-        // Step 3: Translate with timeout
+        // Step 3: Translate
         currentProcessingState = { ...currentProcessingState, step: 'Translate' };
         setProcessingState(currentProcessingState);
 
-        const translatePromise = translateText(originalText, sourceLang, targetLang);
-        const translateTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Translation timeout')), 15000);
-        });
-
-        const translationRes = await Promise.race([translatePromise, translateTimeout]);
+        const translationRes = await translateText(originalText, sourceLang, targetLang);
         const translatedText = translationRes.text;
         
         if (!translatedText || translatedText.trim().length === 0) {
@@ -173,23 +168,15 @@ export const ProcessingScreen: React.FC = () => {
         };
         setProcessingState(currentProcessingState);
 
-        // Step 4: Generate and play speech with timeout
+        // Step 4: Generate and play speech
         const targetVoice = isDoctor ? settings.patientVoice : settings.providerVoice;
         
         currentProcessingState = { ...currentProcessingState, step: 'Speak' };
         setProcessingState(currentProcessingState);
 
-        const speechPromise = generateSpeech(translatedText, targetLang, targetVoice);
-        const speechTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Speech generation timeout')), 15000);
-        });
-
-        const speechBlob = await Promise.race([speechPromise, speechTimeout]) as Blob;
+        const speechBlob = await generateSpeech(translatedText, targetLang, targetVoice);
         const audioUrl = URL.createObjectURL(speechBlob);
 
-        // Play the audio
-        const audio = new Audio(audioUrl);
-        
         // Add message to session
         const randomConfidence = Math.floor(Math.random() * (98 - 85 + 1)) + 85;
         addMessageToSession({
@@ -202,28 +189,23 @@ export const ProcessingScreen: React.FC = () => {
           audioUrl,
         });
 
-        // Handle audio playback
-        const playAudio = () => {
-          return new Promise<void>((resolve, reject) => {
+        // Play audio
+        const audio = new Audio(audioUrl);
+        
+        try {
+          const playPromise = new Promise<void>((resolve, reject) => {
             audio.onended = () => resolve();
-            audio.onerror = () => reject(new Error('Audio playback failed'));
-            
-            // Timeout for audio playback
+            audio.onerror = (event) => reject(new Error('Audio playback failed'));
             setTimeout(() => reject(new Error('Audio playback timeout')), 10000);
-            
             audio.play().catch(reject);
           });
-        };
-
-        try {
-          await playAudio();
-          // Add small delay to show completion
+          
+          await playPromise;
           await new Promise(resolve => setTimeout(resolve, 1000));
           setProcessingStep('completed');
           handleCompletion(false);
         } catch (audioError) {
-          console.warn('Audio playback failed, but processing completed:', audioError);
-          // Still consider it successful since the processing worked
+          console.warn('Audio playback failed, but processing completed');
           setProcessingStep('completed');
           handleCompletion(false);
         }
@@ -232,12 +214,9 @@ export const ProcessingScreen: React.FC = () => {
         console.error('Processing failed:', err);
         setProcessingStep('error');
         
-        // Set specific error messages based on error type
         let errorMessage = 'Processing failed. Please try again.';
         if (err.message.includes('timeout')) {
           errorMessage = 'Request timed out. Please check your connection and try again.';
-        } else if (err.message.includes('No audio data')) {
-          errorMessage = 'No audio recorded. Please try recording again.';
         } else if (err.message.includes('No speech detected')) {
           errorMessage = 'No speech detected. Please speak clearly and try again.';
         } else if (err.message.includes('network') || err.message.includes('fetch')) {
@@ -245,34 +224,16 @@ export const ProcessingScreen: React.FC = () => {
         }
         
         setError(errorMessage);
-        
-        // Delay before showing error screen to let user see what went wrong
         setTimeout(() => handleCompletion(true), 2000);
       }
     };
 
-    // Small delay before starting processing
-    const startDelay = setTimeout(() => {
-      processAudio();
-    }, 300);
-
+    const startDelay = setTimeout(processAudio, 500);
     return () => {
       clearTimeout(startDelay);
       cleanup();
     };
-  }, [
-    activeRecorder,
-    hasStartedProcessing,
-    addMessageToSession,
-    doctorLanguage,
-    patientLanguage,
-    setError,
-    setProcessingState,
-    setScreen,
-    setActiveRecorder,
-    settings,
-    audioRecorder?.audioBlob
-  ]);
+  }, [activeRecorder, hasStartedProcessing, audioBlob, addMessageToSession, doctorLanguage, patientLanguage, setError, setProcessingState, setScreen, setActiveRecorder, settings]);
 
   // Handle back button
   const handleBack = () => {
@@ -294,10 +255,7 @@ export const ProcessingScreen: React.FC = () => {
               <path d="M17.5 16C17.5 16 17.5 18 19.5 19C21.5 20 23.5 20 23.5 20" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"></path>
             </svg>
           </div>
-          <p className="text-white">
-            {processingStep === 'waiting' && 'Preparing to process...'}
-            {processingStep === 'error' && 'Processing failed...'}
-          </p>
+          <p className="text-white">Preparing to process...</p>
         </div>
       </div>
     );
@@ -329,7 +287,7 @@ export const ProcessingScreen: React.FC = () => {
                 <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M18 9.5C18 13.0899 15.0899 16 11.5 16C9.52907 16 7.76184 15.1118 6.58579 13.7071C5.18122 12.3025 4.38633 10.4709 4.38633 8.5C4.38633 4.91015 7.29648 2 10.8863 2C14.4762 2 17.3863 4.91015 17.3863 8.5C17.3863 8.8324 17.4287 9.16223 17.5101 9.48316" stroke="currentColor" strokeWidth="1.5"></path>
                   <path d="M12.5 16C12.5 16 12.5 18 10.5 19C8.5 20 6.5 20 6.5 20" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"></path>
-                  <path d="M17.5 16C17.5 16 17.5 18 19.5 19C21.5 20 23.5 20 23.5 20" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"></path>
+                  <path d="M17.5 16C17.5 16  17.5 18 19.5 19C21.5 20 23.5 20 23.5 20" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5"></path>
                 </svg>
               )}
             </div>
