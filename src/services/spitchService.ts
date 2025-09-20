@@ -4,7 +4,7 @@ import * as MockSpitchService from './mockSpitchService';
 
 // Set this to true to use mock data for development and testing.
 // This allows testing the UI flow without making real API calls.
-const USE_MOCK_API = false; 
+const USE_MOCK_API = true;
 
 export const transcribeAudio = (audioBlob: Blob, language: Language) => {
     return USE_MOCK_API
